@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -34,19 +33,16 @@ public class DataHolder {
     private DataHolder() {
         // Add RMB abbreviation, but CNY is correct
         CurrencyUnit.registerCurrency("RMB", 0, 2, Arrays.asList("PRC"));
-
-        load();
     }
 
 
-    private void load() {
-        InputStream inputStream = DataHolder.class.getResourceAsStream("source.txt");
+
+    public void load(String filename) {
         try {
-//            List<String> lines = IOUtils.readLines(inputStream, "UTF-8");
-            List<String> lines = Files.readAllLines(Paths.get(".", "source.txt"), Charset.forName("UTF-8"));
+            List<String> lines = Files.readAllLines(Paths.get(filename), Charset.forName("UTF-8"));
 
             for (String line : lines) {
-                add(Money.parse(line));
+                add(Money.parse(line.toUpperCase()));
             }
         } catch (IOException e) {
             LOG.error("Money cannot be loadede from file!", e);
@@ -59,7 +55,11 @@ public class DataHolder {
         Money stored = sumByCurrencyMap.get(moneyToAdd.getCurrencyUnit().getCurrencyCode());
         if (stored != null) {
             stored = stored.plus(moneyToAdd);
-            sumByCurrencyMap.put(stored.getCurrencyUnit().getCurrencyCode(), stored);
+            if (stored.isZero()) {
+                sumByCurrencyMap.remove(stored.getCurrencyUnit().getCurrencyCode());
+            } else {
+                sumByCurrencyMap.put(stored.getCurrencyUnit().getCurrencyCode(), stored);
+            }
         } else {
             sumByCurrencyMap.put(moneyToAdd.getCurrencyUnit().getCurrencyCode(), moneyToAdd);
         }
